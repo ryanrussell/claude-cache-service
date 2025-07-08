@@ -1,0 +1,234 @@
+sdks:
+  # JavaScript/TypeScript SDKs
+  - name: sentry-javascript
+    url: https://github.com/getsentry/sentry-javascript
+    language: javascript
+    patterns:
+      - "*.js"
+      - "*.ts"
+      - "*.jsx"
+      - "*.tsx"
+    key_files:
+      - "packages/core/src/envelope.ts"
+      - "packages/core/src/transport.ts"
+      - "packages/types/src/index.ts"
+    active: true
+
+  - name: sentry-react-native
+    url: https://github.com/getsentry/sentry-react-native
+    language: javascript
+    patterns:
+      - "*.js"
+      - "*.ts"
+      - "*.jsx"
+      - "*.tsx"
+    active: true
+
+  # Python SDK
+  - name: sentry-python
+    url: https://github.com/getsentry/sentry-python
+    language: python
+    patterns:
+      - "*.py"
+    key_files:
+      - "sentry_sdk/envelope.py"
+      - "sentry_sdk/transport.py"
+      - "sentry_sdk/client.py"
+    active: true
+
+  # Go SDK
+  - name: sentry-go
+    url: https://github.com/getsentry/sentry-go
+    language: go
+    patterns:
+      - "*.go"
+    key_files:
+      - "transport.go"
+      - "client.go"
+      - "interfaces.go"
+    active: true
+
+  # Java SDKs
+  - name: sentry-java
+    url: https://github.com/getsentry/sentry-java
+    language: java
+    patterns:
+      - "*.java"
+      - "*.kt"
+    key_files:
+      - "sentry/src/main/java/io/sentry/transport/ITransport.java"
+      - "sentry/src/main/java/io/sentry/SentryEnvelope.java"
+    active: true
+
+  # .NET SDKs
+  - name: sentry-dotnet
+    url: https://github.com/getsentry/sentry-dotnet
+    language: csharp
+    patterns:
+      - "*.cs"
+    key_files:
+      - "src/Sentry/Protocol/Envelopes/Envelope.cs"
+      - "src/Sentry/Transport/HttpTransport.cs"
+    active: true
+
+  - name: sentry-unity
+    url: https://github.com/getsentry/sentry-unity
+    language: csharp
+    patterns:
+      - "*.cs"
+    active: true
+
+  # Ruby SDK
+  - name: sentry-ruby
+    url: https://github.com/getsentry/sentry-ruby
+    language: ruby
+    patterns:
+      - "*.rb"
+    key_files:
+      - "sentry-ruby/lib/sentry/envelope.rb"
+      - "sentry-ruby/lib/sentry/transport.rb"
+    active: true
+
+  # PHP SDKs
+  - name: sentry-php
+    url: https://github.com/getsentry/sentry-php
+    language: php
+    patterns:
+      - "*.php"
+    key_files:
+      - "src/Transport/TransportInterface.php"
+      - "src/Serializer/EnvelopeSerializer.php"
+    active: true
+
+  - name: sentry-laravel
+    url: https://github.com/getsentry/sentry-laravel
+    language: php
+    patterns:
+      - "*.php"
+    active: true
+
+  - name: sentry-symfony
+    url: https://github.com/getsentry/sentry-symfony
+    language: php
+    patterns:
+      - "*.php"
+    active: true
+
+  # iOS/macOS SDKs
+  - name: sentry-cocoa
+    url: https://github.com/getsentry/sentry-cocoa
+    language: objective-c
+    patterns:
+      - "*.m"
+      - "*.h"
+      - "*.swift"
+    key_files:
+      - "Sources/Sentry/SentryEnvelope.m"
+      - "Sources/Sentry/SentryTransport.m"
+    active: true
+
+  # Android SDK
+  - name: sentry-android
+    url: https://github.com/getsentry/sentry-android
+    language: java
+    patterns:
+      - "*.java"
+      - "*.kt"
+    active: true
+
+  # Rust SDK
+  - name: sentry-rust
+    url: https://github.com/getsentry/sentry-rust
+    language: rust
+    patterns:
+      - "*.rs"
+    key_files:
+      - "sentry/src/transport.rs"
+      - "sentry/src/envelope.rs"
+    active: true
+
+  # Dart/Flutter SDK
+  - name: sentry-dart
+    url: https://github.com/getsentry/sentry-dart
+    language: dart
+    patterns:
+      - "*.dart"
+    active: true
+
+  # Elixir SDK
+  - name: sentry-elixir
+    url: https://github.com/getsentry/sentry-elixir
+    language: elixir
+    patterns:
+      - "*.ex"
+      - "*.exs"
+    active: true
+
+  # Native SDK
+  - name: sentry-native
+    url: https://github.com/getsentry/sentry-native
+    language: c
+    patterns:
+      - "*.c"
+      - "*.cpp"
+      - "*.h"
+      - "*.hpp"
+    active: true
+
+  # Perl SDK
+  - name: sentry-perl
+    url: https://github.com/getsentry/sentry-perl
+    language: perl
+    patterns:
+      - "*.pm"
+      - "*.pl"
+    active: true
+
+  # Clojure SDK
+  - name: sentry-clojure
+    url: https://github.com/getsentry/sentry-clojure
+    language: clojure
+    patterns:
+      - "*.clj"
+      - "*.cljs"
+    active: true
+
+  # Additional SDKs (mark as inactive initially)
+  - name: sentry-electron
+    url: https://github.com/getsentry/sentry-electron
+    language: javascript
+    patterns:
+      - "*.js"
+      - "*.ts"
+    active: false
+
+  - name: sentry-capacitor
+    url: https://github.com/getsentry/sentry-capacitor
+    language: javascript
+    patterns:
+      - "*.js"
+      - "*.ts"
+    active: false
+
+  - name: sentry-kotlin-multiplatform
+    url: https://github.com/getsentry/sentry-kotlin-multiplatform
+    language: kotlin
+    patterns:
+      - "*.kt"
+    active: false
+
+  - name: sentry-unreal
+    url: https://github.com/getsentry/sentry-unreal
+    language: cpp
+    patterns:
+      - "*.cpp"
+      - "*.h"
+    active: false
+
+  - name: sentry-godot
+    url: https://github.com/getsentry/sentry-godot
+    language: gdscript
+    patterns:
+      - "*.gd"
+      - "*.tscn"
+    active: false

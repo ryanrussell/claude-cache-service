@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -12,35 +13,55 @@ import (
 	"github.com/ryanrussell/claude-cache-service/internal/analyzer"
 	"github.com/ryanrussell/claude-cache-service/internal/cache"
 	"github.com/ryanrussell/claude-cache-service/internal/config"
+	"github.com/ryanrussell/claude-cache-service/internal/git"
+	"github.com/ryanrussell/claude-cache-service/internal/sdk"
 )
 
 // UpdateWorker handles scheduled cache updates.
 type UpdateWorker struct {
-	cache    *cache.Manager
-	logger   zerolog.Logger
-	config   *config.Config
-	cron     *cron.Cron
-	analyzer analyzer.Analyzer
+	cache       *cache.Manager
+	logger      zerolog.Logger
+	config      *config.Config
+	cron        *cron.Cron
+	sdkAnalyzer *sdk.Analyzer
 }
 
 // NewUpdateWorker creates a new update worker.
 func NewUpdateWorker(cache *cache.Manager, logger zerolog.Logger, config *config.Config) *UpdateWorker {
-	// Create analyzer if Claude API key is configured
-	var sdkAnalyzer analyzer.Analyzer
+	// Create git client
+	gitWorkDir := filepath.Join(config.CacheDir, "repos")
+	gitClient := git.NewClient(gitWorkDir, logger)
+
+	// Create analyzer based on configuration
+	var claudeAnalyzer analyzer.Analyzer
 	if config.ClaudeAPIKey != "" {
-		sdkAnalyzer = analyzer.NewClaudeAnalyzer(config.ClaudeAPIKey, config.ClaudeModel, logger)
+		claudeAnalyzer = analyzer.NewClaudeAnalyzer(config.ClaudeAPIKey, config.ClaudeModel, logger)
 		logger.Info().Msg("Claude analyzer initialized")
 	} else {
 		logger.Warn().Msg("Claude API key not configured, using mock analyzer")
-		sdkAnalyzer = &mockAnalyzer{logger: logger}
+		claudeAnalyzer = &mockAnalyzer{logger: logger}
+	}
+
+	// Create SDK analyzer
+	sdkAnalyzer, err := sdk.NewAnalyzer(gitClient, claudeAnalyzer, cache, logger)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to create SDK analyzer")
+		// Return worker without SDK analyzer, will use fallback
+		return &UpdateWorker{
+			cache:       cache,
+			logger:      logger,
+			config:      config,
+			cron:        cron.New(cron.WithLogger(cron.VerbosePrintfLogger(&cronLogger{logger: logger}))),
+			sdkAnalyzer: nil,
+		}
 	}
 
 	return &UpdateWorker{
-		cache:    cache,
-		logger:   logger,
-		config:   config,
-		cron:     cron.New(cron.WithLogger(cron.VerbosePrintfLogger(&cronLogger{logger: logger}))),
-		analyzer: sdkAnalyzer,
+		cache:       cache,
+		logger:      logger,
+		config:      config,
+		cron:        cron.New(cron.WithLogger(cron.VerbosePrintfLogger(&cronLogger{logger: logger}))),
+		sdkAnalyzer: sdkAnalyzer,
 	}
 }
 
@@ -84,88 +105,72 @@ func (w *UpdateWorker) updateCache(ctx context.Context) error {
 	start := time.Now()
 	w.logger.Info().Msg("Starting cache update")
 
-	// SDK list to analyze
-	sampleSDKs := []struct {
-		name    string
-		version string
-		// In real implementation, this would contain actual SDK code files
-		codeFiles map[string]string
-	}{
-		{
-			name:    "sentry-go",
-			version: "0.25.0",
-			codeFiles: map[string]string{
-				"transport.go": "package sentry\n\n// Transport interface",
-				"client.go":    "package sentry\n\n// Client struct",
-			},
-		},
-		{
-			name:    "sentry-python",
-			version: "1.40.0",
-			codeFiles: map[string]string{
-				"transport.py": "class HTTPTransport:\n    pass",
-				"client.py":    "class Client:\n    pass",
-			},
-		},
-		{
-			name:    "sentry-javascript",
-			version: "7.92.0",
-			codeFiles: map[string]string{
-				"transport.js": "export class Transport {}",
-				"client.js":    "export class Client {}",
-			},
-		},
+	// Check if SDK analyzer is available
+	if w.sdkAnalyzer == nil {
+		w.logger.Warn().Msg("SDK analyzer not available, using fallback")
+		return w.updateCacheFallback(ctx)
 	}
 
-	// Analyze SDKs
-	for _, sdk := range sampleSDKs {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("update cancelled")
-		default:
-			// Prepare analysis request
-			request := analyzer.AnalysisRequest{
-				SDKName:    sdk.name,
-				Version:    sdk.version,
-				Code:       sdk.codeFiles,
-				CommitHash: "latest", // In real implementation, get actual commit hash
-			}
+	// Analyze all active SDKs
+	results := w.sdkAnalyzer.AnalyzeAllSDKs(ctx)
 
-			// Analyze SDK
+	successCount := 0
+	errorCount := 0
+
+	// Process results
+	for _, result := range results {
+		if result.Error != nil {
+			w.logger.Error().
+				Err(result.Error).
+				Str("sdk", result.SDK.Name).
+				Msg("Failed to analyze SDK")
+			errorCount++
+			continue
+		}
+
+		// Convert analysis to JSON for caching
+		analysisJSON, err := json.Marshal(result.Analysis)
+		if err != nil {
+			w.logger.Error().
+				Err(err).
+				Str("sdk", result.SDK.Name).
+				Msg("Failed to marshal analysis")
+			errorCount++
+			continue
+		}
+
+		// Cache the analysis
+		key := fmt.Sprintf("sdk:%s", result.SDK.Name)
+		if err := w.cache.Set(key, string(analysisJSON), w.config.CacheTTL); err != nil {
+			w.logger.Error().
+				Err(err).
+				Str("sdk", result.SDK.Name).
+				Msg("Failed to cache SDK analysis")
+			errorCount++
+		} else {
 			w.logger.Info().
-				Str("sdk", sdk.name).
-				Str("version", sdk.version).
-				Msg("Analyzing SDK")
+				Str("sdk", result.SDK.Name).
+				Int("tokens_used", result.Analysis.TokensUsed).
+				Msg("SDK analysis cached")
+			successCount++
+		}
 
-			analysis, err := w.analyzer.AnalyzeCode(ctx, request)
-			if err != nil {
-				w.logger.Error().Err(err).Str("sdk", sdk.name).Msg("Failed to analyze SDK")
-				continue
-			}
+		// Cache version-specific analysis
+		versionKey := fmt.Sprintf("sdk:%s:%s", result.SDK.Name, result.Analysis.AnalysisVersion)
+		if err := w.cache.Set(versionKey, string(analysisJSON), w.config.CacheTTL); err != nil {
+			w.logger.Error().
+				Err(err).
+				Str("key", versionKey).
+				Msg("Failed to cache version-specific analysis")
+		}
 
-			// Convert analysis to JSON for caching
-			analysisJSON, err := json.Marshal(analysis)
-			if err != nil {
-				w.logger.Error().Err(err).Str("sdk", sdk.name).Msg("Failed to marshal analysis")
-				continue
-			}
-
-			// Cache the analysis
-			key := fmt.Sprintf("sdk:%s", sdk.name)
-			if err := w.cache.Set(key, string(analysisJSON), w.config.CacheTTL); err != nil {
-				w.logger.Error().Err(err).Str("sdk", sdk.name).Msg("Failed to cache SDK analysis")
-			} else {
-				w.logger.Info().
-					Str("sdk", sdk.name).
-					Int("tokens_used", analysis.TokensUsed).
-					Msg("SDK analysis cached")
-			}
-
-			// Also cache version-specific analysis
-			versionKey := fmt.Sprintf("sdk:%s:%s", sdk.name, sdk.version)
-			if err := w.cache.Set(versionKey, string(analysisJSON), w.config.CacheTTL); err != nil {
-				w.logger.Error().Err(err).Str("key", versionKey).Msg("Failed to cache version-specific analysis")
-			}
+		// Update last analyzed timestamp
+		timestampKey := fmt.Sprintf("sdk:%s:last_analyzed", result.SDK.Name)
+		if err := w.cache.Set(timestampKey, time.Now().Format(time.RFC3339), 0); err != nil {
+			w.logger.Error().
+				Err(err).
+				Str("sdk", result.SDK.Name).
+				Msg("Failed to update last analyzed timestamp")
 		}
 	}
 
@@ -196,7 +201,78 @@ func (w *UpdateWorker) updateCache(ctx context.Context) error {
 	}
 
 	duration := time.Since(start)
-	w.logger.Info().Dur("duration", duration).Msg("Cache update completed")
+	w.logger.Info().
+		Dur("duration", duration).
+		Int("success", successCount).
+		Int("errors", errorCount).
+		Msg("Cache update completed")
+
+	return nil
+}
+
+// updateCacheFallback performs cache update using mock data when SDK analyzer is not available
+func (w *UpdateWorker) updateCacheFallback(ctx context.Context) error {
+	// Use the original mock implementation
+	sampleSDKs := []string{"sentry-go", "sentry-python", "sentry-javascript"}
+
+	for _, sdkName := range sampleSDKs {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("update cancelled")
+		default:
+			// Create mock analysis
+			mockAnalyzer := &mockAnalyzer{logger: w.logger}
+			request := analyzer.AnalysisRequest{
+				SDKName:    sdkName,
+				Version:    "1.0.0",
+				Code:       map[string]string{"main.file": "// mock code"},
+				CommitHash: "mock",
+			}
+
+			analysis, err := mockAnalyzer.AnalyzeCode(ctx, request)
+			if err != nil {
+				w.logger.Error().Err(err).Str("sdk", sdkName).Msg("Failed to analyze SDK")
+				continue
+			}
+
+			// Convert analysis to JSON for caching
+			analysisJSON, err := json.Marshal(analysis)
+			if err != nil {
+				w.logger.Error().Err(err).Str("sdk", sdkName).Msg("Failed to marshal analysis")
+				continue
+			}
+
+			// Cache the analysis
+			key := fmt.Sprintf("sdk:%s", sdkName)
+			if err := w.cache.Set(key, string(analysisJSON), w.config.CacheTTL); err != nil {
+				w.logger.Error().Err(err).Str("sdk", sdkName).Msg("Failed to cache SDK analysis")
+			} else {
+				w.logger.Info().Str("sdk", sdkName).Msg("SDK analysis cached")
+			}
+		}
+	}
+
+	// Cache project summaries
+	projects := []string{"gremlin-arrow-flight", "claude-code-gui"}
+	for _, project := range projects {
+		summary := map[string]interface{}{
+			"project":       project,
+			"cache_hits":    1000,
+			"token_savings": 45000,
+			"last_updated":  time.Now().Format(time.RFC3339),
+		}
+
+		summaryJSON, err := json.Marshal(summary)
+		if err != nil {
+			w.logger.Error().Err(err).Str("project", project).Msg("Failed to marshal project summary")
+			continue
+		}
+
+		key := fmt.Sprintf("project:%s", project)
+		if err := w.cache.Set(key, string(summaryJSON), w.config.CacheTTL); err != nil {
+			w.logger.Error().Err(err).Str("project", project).Msg("Failed to cache project summary")
+		}
+	}
 
 	return nil
 }
