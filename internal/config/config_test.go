@@ -27,18 +27,18 @@ func TestLoadConfig(t *testing.T) {
 func TestLoadConfigWithEnvVars(t *testing.T) {
 	// Set environment variables
 	envVars := map[string]string{
-		"PORT":             "9090",
-		"DEBUG":            "true",
-		"CACHE_DIR":        "/tmp/cache",
-		"UPDATE_SCHEDULE":  "0 0 * * *",
-		"CACHE_TTL":        "1h",
-		"MAX_CACHE_SIZE":   "2147483648",
-		"CLAUDE_API_KEY":   "test-key",
-		"CLAUDE_MODEL":     "test-model",
-		"CLAUDE_TIMEOUT":   "10m",
-		"MAX_CONCURRENT":   "20",
-		"WORKER_POOL_SIZE": "10",
-		"ENABLE_ANALYTICS": "false",
+		"PORT":              "9090",
+		"DEBUG":             "true",
+		"CACHE_DIR":         "/tmp/cache",
+		"UPDATE_SCHEDULE":   "0 0 * * *",
+		"CACHE_TTL":         "1h",
+		"MAX_CACHE_SIZE":    "2147483648",
+		"CLAUDE_API_KEY":    "test-key",
+		"CLAUDE_MODEL":      "test-model",
+		"CLAUDE_TIMEOUT":    "10m",
+		"MAX_CONCURRENT":    "20",
+		"WORKER_POOL_SIZE":  "10",
+		"ENABLE_ANALYTICS":  "false",
 		"ANALYTICS_DB_PATH": "/tmp/analytics.db",
 	}
 
@@ -81,7 +81,7 @@ func TestGetEnv(t *testing.T) {
 	// Test with existing env var
 	os.Setenv("TEST_VAR", "test-value")
 	defer os.Unsetenv("TEST_VAR")
-	
+
 	value := getEnv("TEST_VAR", "default")
 	assert.Equal(t, "test-value", value)
 
@@ -124,7 +124,7 @@ func TestGetIntEnv(t *testing.T) {
 	// Test valid integer
 	os.Setenv("INT_VAR", "42")
 	defer os.Unsetenv("INT_VAR")
-	
+
 	value := getIntEnv("INT_VAR", 0)
 	assert.Equal(t, 42, value)
 
@@ -142,7 +142,7 @@ func TestGetInt64Env(t *testing.T) {
 	// Test valid int64
 	os.Setenv("INT64_VAR", "9223372036854775807")
 	defer os.Unsetenv("INT64_VAR")
-	
+
 	value := getInt64Env("INT64_VAR", 0)
 	assert.Equal(t, int64(9223372036854775807), value)
 
@@ -156,7 +156,7 @@ func TestGetDurationEnv(t *testing.T) {
 	// Test valid duration
 	os.Setenv("DURATION_VAR", "5m30s")
 	defer os.Unsetenv("DURATION_VAR")
-	
+
 	value := getDurationEnv("DURATION_VAR", time.Second)
 	assert.Equal(t, 5*time.Minute+30*time.Second, value)
 

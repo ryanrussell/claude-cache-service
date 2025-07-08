@@ -17,7 +17,7 @@ import (
 func TestNewUpdateWorker(t *testing.T) {
 	tempDir := t.TempDir()
 	logger := zerolog.New(os.Stderr).Level(zerolog.Disabled)
-	
+
 	cacheManager, err := cache.NewManager(tempDir, logger)
 	require.NoError(t, err)
 	defer func() {
@@ -39,7 +39,7 @@ func TestNewUpdateWorker(t *testing.T) {
 func TestUpdateCache(t *testing.T) {
 	tempDir := t.TempDir()
 	logger := zerolog.New(os.Stderr).Level(zerolog.Disabled)
-	
+
 	cacheManager, err := cache.NewManager(tempDir, logger)
 	require.NoError(t, err)
 	defer func() {
@@ -53,20 +53,22 @@ func TestUpdateCache(t *testing.T) {
 	}
 
 	worker := NewUpdateWorker(cacheManager, logger, cfg)
-	
+
 	ctx := context.Background()
 	err = worker.updateCache(ctx)
 	assert.NoError(t, err)
 
 	// Verify that SDKs were cached
-	sdks := []string{"sentry-go", "sentry-python", "sentry-javascript", "sentry-ruby", "sentry-java"}
+	// Only check the SDKs that are actually analyzed in the new implementation
+	sdks := []string{"sentry-go", "sentry-python", "sentry-javascript"}
 	for _, sdk := range sdks {
 		key := "sdk:" + sdk
 		value, err := cacheManager.Get(key)
 		assert.NoError(t, err, "SDK %s should be cached", sdk)
-		assert.Contains(t, value, sdk)
-		assert.Contains(t, value, "version")
+		// The new implementation stores JSON analysis data
+		assert.Contains(t, value, "language")
 		assert.Contains(t, value, "envelope_format")
+		assert.Contains(t, value, "protocol_version")
 	}
 
 	// Verify that projects were cached
@@ -84,7 +86,7 @@ func TestUpdateCache(t *testing.T) {
 func TestUpdateCacheWithCancellation(t *testing.T) {
 	tempDir := t.TempDir()
 	logger := zerolog.New(os.Stderr).Level(zerolog.Disabled)
-	
+
 	cacheManager, err := cache.NewManager(tempDir, logger)
 	require.NoError(t, err)
 	defer func() {
@@ -98,11 +100,11 @@ func TestUpdateCacheWithCancellation(t *testing.T) {
 	}
 
 	worker := NewUpdateWorker(cacheManager, logger, cfg)
-	
+
 	// Create a context that we'll cancel immediately
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	
+
 	err = worker.updateCache(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "update cancelled")
@@ -111,7 +113,7 @@ func TestUpdateCacheWithCancellation(t *testing.T) {
 func TestWorkerStartStop(t *testing.T) {
 	tempDir := t.TempDir()
 	logger := zerolog.New(os.Stderr).Level(zerolog.Disabled)
-	
+
 	cacheManager, err := cache.NewManager(tempDir, logger)
 	require.NoError(t, err)
 	defer func() {
@@ -125,9 +127,9 @@ func TestWorkerStartStop(t *testing.T) {
 	}
 
 	worker := NewUpdateWorker(cacheManager, logger, cfg)
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Start worker in background
 	done := make(chan bool)
 	go func() {
@@ -137,10 +139,10 @@ func TestWorkerStartStop(t *testing.T) {
 
 	// Let it run briefly
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Stop the worker
 	cancel()
-	
+
 	// Wait for it to finish
 	select {
 	case <-done:
@@ -153,7 +155,7 @@ func TestWorkerStartStop(t *testing.T) {
 func TestCronLogger(t *testing.T) {
 	logger := zerolog.New(os.Stderr).Level(zerolog.DebugLevel)
 	cronLog := &cronLogger{logger: logger}
-	
+
 	// Should not panic
 	cronLog.Printf("Test message: %s", "test")
 	cronLog.Printf("Test number: %d", 42)

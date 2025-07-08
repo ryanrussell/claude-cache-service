@@ -12,12 +12,12 @@ import (
 
 // CacheEntry represents a cached item.
 type CacheEntry struct {
-	Key       string    `json:"key"`
-	Value     string    `json:"value"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	HitCount  int64     `json:"hit_count"`
-	Size      int64     `json:"size"`
+	Key       string        `json:"key"`
+	Value     string        `json:"value"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+	HitCount  int64         `json:"hit_count"`
+	Size      int64         `json:"size"`
 	TTL       time.Duration `json:"ttl"`
 }
 
@@ -30,19 +30,19 @@ type Manager struct {
 
 // Statistics tracks cache performance.
 type Statistics struct {
-	mu          sync.RWMutex
-	Hits        int64
-	Misses      int64
-	Sets        int64
-	Deletes     int64
-	TotalSize   int64
-	ItemCount   int64
+	mu        sync.RWMutex
+	Hits      int64
+	Misses    int64
+	Sets      int64
+	Deletes   int64
+	TotalSize int64
+	ItemCount int64
 }
 
 // NewManager creates a new cache manager.
 func NewManager(cacheDir string, logger zerolog.Logger) (*Manager, error) {
 	dbPath := fmt.Sprintf("%s/cache.db", cacheDir)
-	
+
 	db, err := buntdb.Open(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open cache database: %w", err)

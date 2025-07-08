@@ -17,19 +17,19 @@ import (
 
 func setupTestServer(t *testing.T) (*Server, *cache.Manager) {
 	gin.SetMode(gin.TestMode)
-	
+
 	tempDir := t.TempDir()
 	logger := zerolog.New(zerolog.NewConsoleWriter()).Level(zerolog.Disabled)
-	
+
 	cfg := &config.Config{
 		Port:    "8080",
 		Version: "test",
 		Debug:   false,
 	}
-	
+
 	cacheManager, err := cache.NewManager(tempDir, logger)
 	require.NoError(t, err)
-	
+
 	server := NewServer(cfg, cacheManager, logger)
 	return server, cacheManager
 }
