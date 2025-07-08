@@ -28,6 +28,8 @@ func TestNewUpdateWorker(t *testing.T) {
 	cfg := &config.Config{
 		UpdateSchedule: "0 2 * * 0",
 		CacheTTL:       time.Hour,
+		CacheDir:       tempDir,
+		ClaudeAPIKey:   "", // Ensure we use mock analyzer
 	}
 
 	worker := NewUpdateWorker(cacheManager, logger, cfg)
@@ -50,9 +52,14 @@ func TestUpdateCache(t *testing.T) {
 	cfg := &config.Config{
 		UpdateSchedule: "0 2 * * 0",
 		CacheTTL:       time.Hour,
+		CacheDir:       tempDir,
+		ClaudeAPIKey:   "", // Ensure we use mock analyzer
 	}
 
 	worker := NewUpdateWorker(cacheManager, logger, cfg)
+
+	// Ensure we're using the fallback by setting sdkAnalyzer to nil
+	worker.sdkAnalyzer = nil
 
 	ctx := context.Background()
 	err = worker.updateCache(ctx)
@@ -97,9 +104,14 @@ func TestUpdateCacheWithCancellation(t *testing.T) {
 	cfg := &config.Config{
 		UpdateSchedule: "0 2 * * 0",
 		CacheTTL:       time.Hour,
+		CacheDir:       tempDir,
+		ClaudeAPIKey:   "", // Ensure we use mock analyzer
 	}
 
 	worker := NewUpdateWorker(cacheManager, logger, cfg)
+
+	// Ensure we're using the fallback by setting sdkAnalyzer to nil
+	worker.sdkAnalyzer = nil
 
 	// Create a context that we'll cancel immediately
 	ctx, cancel := context.WithCancel(context.Background())
