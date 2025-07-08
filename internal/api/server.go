@@ -118,13 +118,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s *Server) handleHealth(c *gin.Context) {
 	stats := s.cache.GetStats()
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"status": "healthy",
+		"status":  "healthy",
 		"version": s.config.Version,
 		"cache": gin.H{
-			"items": stats.ItemCount,
-			"size": stats.TotalSize,
+			"items":    stats.ItemCount,
+			"size":     stats.TotalSize,
 			"hit_rate": calculateHitRate(stats.Hits, stats.Misses),
 		},
 		"timestamp": time.Now().Unix(),
@@ -133,7 +133,7 @@ func (s *Server) handleHealth(c *gin.Context) {
 
 func (s *Server) handleCacheSummary(c *gin.Context) {
 	stats := s.cache.GetStats()
-	
+
 	response := SuccessResponse{
 		Data: gin.H{
 			"statistics": gin.H{
@@ -146,25 +146,25 @@ func (s *Server) handleCacheSummary(c *gin.Context) {
 				"hit_rate":   calculateHitRate(stats.Hits, stats.Misses),
 			},
 			"configuration": gin.H{
-				"cache_dir":    s.config.CacheDir,
-				"max_size":     s.config.MaxCacheSize,
-				"ttl":          s.config.CacheTTL.String(),
+				"cache_dir": s.config.CacheDir,
+				"max_size":  s.config.MaxCacheSize,
+				"ttl":       s.config.CacheTTL.String(),
 			},
 		},
 		Message:   "Cache summary retrieved successfully",
 		RequestID: c.GetString("request_id"),
 		Timestamp: time.Now().Unix(),
 	}
-	
+
 	c.JSON(http.StatusOK, response)
 }
 
 func (s *Server) handleGetProjectCache(c *gin.Context) {
 	projectName := c.Param("name")
-	
+
 	cacheKey := "project:" + projectName
 	value, err := s.cache.Get(cacheKey)
-	
+
 	if err != nil {
 		s.logger.Error().Err(err).Str("project", projectName).Msg("Failed to get project cache")
 		c.JSON(http.StatusNotFound, ErrorResponse{
@@ -175,7 +175,7 @@ func (s *Server) handleGetProjectCache(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, SuccessResponse{
 		Data:      value,
 		Message:   "Project cache retrieved successfully",
@@ -186,10 +186,10 @@ func (s *Server) handleGetProjectCache(c *gin.Context) {
 
 func (s *Server) handleGetSDKCache(c *gin.Context) {
 	sdkName := c.Param("name")
-	
+
 	cacheKey := "sdk:" + sdkName
 	value, err := s.cache.Get(cacheKey)
-	
+
 	if err != nil {
 		s.logger.Error().Err(err).Str("sdk", sdkName).Msg("Failed to get SDK cache")
 		c.JSON(http.StatusNotFound, ErrorResponse{
@@ -200,7 +200,7 @@ func (s *Server) handleGetSDKCache(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, SuccessResponse{
 		Data:      value,
 		Message:   "SDK cache retrieved successfully",
@@ -221,7 +221,7 @@ func (s *Server) handleRefreshCache(c *gin.Context) {
 
 func (s *Server) handleDeleteCacheKey(c *gin.Context) {
 	key := c.Param("key")
-	
+
 	if err := s.cache.Delete(key); err != nil {
 		s.logger.Error().Err(err).Str("key", key).Msg("Failed to delete cache key")
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -232,7 +232,7 @@ func (s *Server) handleDeleteCacheKey(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, SuccessResponse{
 		Data:      gin.H{"deleted": key},
 		Message:   "Cache key deleted successfully",
@@ -246,11 +246,11 @@ func (s *Server) handleUsageAnalytics(c *gin.Context) {
 	c.JSON(http.StatusOK, SuccessResponse{
 		Data: gin.H{
 			"token_savings": gin.H{
-				"total": 1234567,
+				"total":      1234567,
 				"percentage": 89.5,
 			},
 			"requests": gin.H{
-				"total": 10000,
+				"total":  10000,
 				"cached": 8500,
 			},
 		},
@@ -270,7 +270,7 @@ func (s *Server) handlePerformanceAnalytics(c *gin.Context) {
 				"p99": 100,
 			},
 			"cache_performance": gin.H{
-				"hit_rate": 85.5,
+				"hit_rate":       85.5,
 				"avg_latency_ms": 2.5,
 			},
 		},
@@ -298,7 +298,7 @@ func (s *Server) handleWebSocketUpdates(c *gin.Context) {
 
 func (s *Server) handleWebSocketProject(c *gin.Context) {
 	projectName := c.Param("name")
-	
+
 	conn, err := s.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		s.logger.Error().Err(err).Msg("Failed to upgrade WebSocket connection")

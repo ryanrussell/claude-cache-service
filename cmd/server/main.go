@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/ryanrussell/claude-cache-service/internal/api"
 	"github.com/ryanrussell/claude-cache-service/internal/cache"
 	"github.com/ryanrussell/claude-cache-service/internal/config"
 	"github.com/ryanrussell/claude-cache-service/internal/worker"
-	"github.com/rs/zerolog"
 )
 
 func main() {
@@ -83,7 +83,7 @@ func main() {
 	// Start the server
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	logger.Info().Str("address", addr).Msg("Starting API server")
-	
+
 	if err := server.Run(addr); err != nil {
 		logger.Fatal().Err(err).Msg("Failed to start server")
 	}

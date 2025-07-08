@@ -14,10 +14,10 @@ func (s *Server) requestIDMiddleware() gin.HandlerFunc {
 		if requestID == "" {
 			requestID = uuid.New().String()
 		}
-		
+
 		c.Set("request_id", requestID)
 		c.Header("X-Request-ID", requestID)
-		
+
 		c.Next()
 	}
 }
@@ -28,19 +28,19 @@ func (s *Server) loggingMiddleware() gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
-		
+
 		c.Next()
-		
+
 		latency := time.Since(start)
 		clientIP := c.ClientIP()
 		method := c.Request.Method
 		statusCode := c.Writer.Status()
 		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
-		
+
 		if raw != "" {
 			path = path + "?" + raw
 		}
-		
+
 		logger := s.logger.With().
 			Str("request_id", c.GetString("request_id")).
 			Str("client_ip", clientIP).
@@ -49,7 +49,7 @@ func (s *Server) loggingMiddleware() gin.HandlerFunc {
 			Int("status", statusCode).
 			Dur("latency", latency).
 			Logger()
-		
+
 		switch {
 		case statusCode >= 500:
 			logger.Error().Str("error", errorMessage).Msg("Server error")
@@ -72,18 +72,18 @@ func (s *Server) recoveryMiddleware() gin.HandlerFunc {
 					Interface("error", err).
 					Str("request_id", c.GetString("request_id")).
 					Msg("Panic recovered")
-				
+
 				c.JSON(500, ErrorResponse{
 					Error:     "internal_error",
 					Message:   "An internal error occurred",
 					RequestID: c.GetString("request_id"),
 					Timestamp: time.Now().Unix(),
 				})
-				
+
 				c.Abort()
 			}
 		}()
-		
+
 		c.Next()
 	}
 }
@@ -95,12 +95,12 @@ func (s *Server) corsMiddleware() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Credentials", "true")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Request-ID")
 		c.Header("Access-Control-Allow-Methods", "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE")
-		
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-		
+
 		c.Next()
 	}
 }
@@ -129,7 +129,7 @@ func (s *Server) corsMiddleware() gin.HandlerFunc {
 // 			c.Abort()
 // 			return
 // 		}
-		
+
 // 		// Validate token
 // 		if !s.validateToken(token) {
 // 			c.JSON(401, ErrorResponse{
@@ -141,7 +141,7 @@ func (s *Server) corsMiddleware() gin.HandlerFunc {
 // 			c.Abort()
 // 			return
 // 		}
-		
+
 // 		c.Next()
 // 	}
 // }

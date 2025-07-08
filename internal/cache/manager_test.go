@@ -159,14 +159,14 @@ func TestConcurrentAccess(t *testing.T) {
 		go func(id int) {
 			key := "concurrent-key"
 			value := "value"
-			
+
 			// Perform multiple operations
 			for j := 0; j < 100; j++ {
 				_ = manager.Set(key, value, 0)
 				_, _ = manager.Get(key)
 				_ = manager.Delete(key)
 			}
-			
+
 			done <- true
 		}(i)
 	}

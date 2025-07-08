@@ -16,15 +16,15 @@ type Config struct {
 	Debug   bool
 
 	// Cache configuration
-	CacheDir        string
-	UpdateSchedule  string
-	CacheTTL        time.Duration
-	MaxCacheSize    int64
+	CacheDir       string
+	UpdateSchedule string
+	CacheTTL       time.Duration
+	MaxCacheSize   int64
 
 	// Claude API configuration
-	ClaudeAPIKey   string
-	ClaudeModel    string
-	ClaudeTimeout  time.Duration
+	ClaudeAPIKey  string
+	ClaudeModel   string
+	ClaudeTimeout time.Duration
 
 	// Performance configuration
 	MaxConcurrent  int
@@ -80,7 +80,7 @@ func getBoolEnv(key string, defaultValue bool) bool {
 	if value == "" {
 		return defaultValue
 	}
-	
+
 	// Handle yes/no values
 	switch value {
 	case "yes", "Yes", "YES":
@@ -88,7 +88,7 @@ func getBoolEnv(key string, defaultValue bool) bool {
 	case "no", "No", "NO":
 		return false
 	}
-	
+
 	boolValue, err := strconv.ParseBool(value)
 	if err != nil {
 		return defaultValue
