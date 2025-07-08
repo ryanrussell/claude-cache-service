@@ -24,7 +24,6 @@ type CacheEntry struct {
 // Manager handles all cache operations.
 type Manager struct {
 	db     *buntdb.DB
-	mu     sync.RWMutex
 	logger zerolog.Logger
 	stats  *Statistics
 }
@@ -175,7 +174,14 @@ func (m *Manager) Delete(key string) error {
 func (m *Manager) GetStats() Statistics {
 	m.stats.mu.RLock()
 	defer m.stats.mu.RUnlock()
-	return *m.stats
+	return Statistics{
+		Hits:      m.stats.Hits,
+		Misses:    m.stats.Misses,
+		Sets:      m.stats.Sets,
+		Deletes:   m.stats.Deletes,
+		TotalSize: m.stats.TotalSize,
+		ItemCount: m.stats.ItemCount,
+	}
 }
 
 // Close closes the cache database.

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -106,49 +105,50 @@ func (s *Server) corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// rateLimitMiddleware implements rate limiting.
-func (s *Server) rateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
-	// TODO: Implement rate limiting
-	return func(c *gin.Context) {
-		c.Next()
-	}
-}
+// TODO: Implement these middleware functions when needed
+// // rateLimitMiddleware implements rate limiting.
+// func (s *Server) rateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
+// 	// TODO: Implement rate limiting
+// 	return func(c *gin.Context) {
+// 		c.Next()
+// 	}
+// }
 
-// authMiddleware implements authentication.
-func (s *Server) authMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// TODO: Implement authentication for write operations
-		token := c.GetHeader("Authorization")
-		if token == "" {
-			c.JSON(401, ErrorResponse{
-				Error:     "unauthorized",
-				Message:   "Authentication required",
-				RequestID: c.GetString("request_id"),
-				Timestamp: time.Now().Unix(),
-			})
-			c.Abort()
-			return
-		}
+// // authMiddleware implements authentication.
+// func (s *Server) authMiddleware() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		// TODO: Implement authentication for write operations
+// 		token := c.GetHeader("Authorization")
+// 		if token == "" {
+// 			c.JSON(401, ErrorResponse{
+// 				Error:     "unauthorized",
+// 				Message:   "Authentication required",
+// 				RequestID: c.GetString("request_id"),
+// 				Timestamp: time.Now().Unix(),
+// 			})
+// 			c.Abort()
+// 			return
+// 		}
 		
-		// Validate token
-		if !s.validateToken(token) {
-			c.JSON(401, ErrorResponse{
-				Error:     "invalid_token",
-				Message:   "Invalid authentication token",
-				RequestID: c.GetString("request_id"),
-				Timestamp: time.Now().Unix(),
-			})
-			c.Abort()
-			return
-		}
+// 		// Validate token
+// 		if !s.validateToken(token) {
+// 			c.JSON(401, ErrorResponse{
+// 				Error:     "invalid_token",
+// 				Message:   "Invalid authentication token",
+// 				RequestID: c.GetString("request_id"),
+// 				Timestamp: time.Now().Unix(),
+// 			})
+// 			c.Abort()
+// 			return
+// 		}
 		
-		c.Next()
-	}
-}
+// 		c.Next()
+// 	}
+// }
 
-// validateToken validates an authentication token.
-func (s *Server) validateToken(token string) bool {
-	// TODO: Implement proper token validation
-	expectedToken := fmt.Sprintf("Bearer %s", s.config.ClaudeAPIKey)
-	return token == expectedToken
-}
+// // validateToken validates an authentication token.
+// func (s *Server) validateToken(token string) bool {
+// 	// TODO: Implement proper token validation
+// 	expectedToken := fmt.Sprintf("Bearer %s", s.config.ClaudeAPIKey)
+// 	return token == expectedToken
+// }
