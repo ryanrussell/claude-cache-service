@@ -61,23 +61,25 @@ WS /ws/project/:name
 
 ## Client Libraries
 
-### Go Client
+### Direct API Usage
 
-```go
-import "github.com/ryanrussell/claude-cache-service/client/go"
+Currently, use the REST API directly. Client libraries are planned:
 
-client := claudecache.New("http://localhost:8080")
-summary, err := client.GetSDKSummary("sentry-go")
+```bash
+# Get SDK summary
+curl http://localhost:8080/api/v1/cache/sdk/sentry-go
+
+# Get project cache  
+curl http://localhost:8080/api/v1/cache/project/gremlin-arrow-flight
 ```
 
-### TypeScript Client
+### Planned Client Libraries
 
-```typescript
-import { ClaudeCacheClient } from '@ryanrussell/claude-cache';
+- **Go Client** (TODO): `pkg/client/go/`
+- **TypeScript Client** (TODO): `pkg/client/typescript/`
+- **Python Client** (TODO): Coming soon
 
-const client = new ClaudeCacheClient('http://localhost:8080');
-const summary = await client.getSDKSummary('sentry-go');
-```
+For now, use your favorite HTTP client library directly with the REST API.
 
 ## Configuration
 
