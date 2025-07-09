@@ -152,27 +152,19 @@ func extractJSONFromMarkdown(text string) string {
 	jsonStart := "```json"
 	jsonEnd := "```"
 
-	startIdx := 0
-	for {
-		idx := findString(text[startIdx:], jsonStart)
-		if idx == -1 {
-			break
-		}
-		idx += startIdx
-
+	idx := findString(text, jsonStart)
+	if idx != -1 {
 		start := idx + len(jsonStart)
 		end := findString(text[start:], jsonEnd)
-		if end == -1 {
-			break
+		if end != -1 {
+			end += start
+			// Trim whitespace from extracted content
+			return trimString(text[start:end])
 		}
-		end += start
-
-		// Trim whitespace from extracted content
-		return trimString(text[start:end])
 	}
 
 	// Try without json tag
-	startIdx = 0
+	startIdx := 0
 	for {
 		idx := findString(text[startIdx:], "```")
 		if idx == -1 {

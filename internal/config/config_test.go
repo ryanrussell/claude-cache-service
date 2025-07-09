@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -44,8 +45,10 @@ func TestLoadConfigWithEnvVars(t *testing.T) {
 
 	// Set env vars
 	for k, v := range envVars {
-		os.Setenv(k, v)
-		defer os.Unsetenv(k)
+		require.NoError(t, os.Setenv(k, v))
+		defer func(key string) {
+			require.NoError(t, os.Unsetenv(key))
+		}(k)
 	}
 
 	cfg, err := Load()
@@ -69,8 +72,10 @@ func TestLoadConfigWithEnvVars(t *testing.T) {
 
 func TestLoadConfigWithAlternativeAPIKey(t *testing.T) {
 	// Test with ANTHROPIC_API_KEY when CLAUDE_API_KEY is not set
-	os.Setenv("ANTHROPIC_API_KEY", "anthropic-key")
-	defer os.Unsetenv("ANTHROPIC_API_KEY")
+	require.NoError(t, os.Setenv("ANTHROPIC_API_KEY", "anthropic-key"))
+	defer func() {
+		require.NoError(t, os.Unsetenv("ANTHROPIC_API_KEY"))
+	}()
 
 	cfg, err := Load()
 	assert.NoError(t, err)
@@ -79,8 +84,10 @@ func TestLoadConfigWithAlternativeAPIKey(t *testing.T) {
 
 func TestGetEnv(t *testing.T) {
 	// Test with existing env var
-	os.Setenv("TEST_VAR", "test-value")
-	defer os.Unsetenv("TEST_VAR")
+	require.NoError(t, os.Setenv("TEST_VAR", "test-value"))
+	defer func() {
+		require.NoError(t, os.Unsetenv("TEST_VAR"))
+	}()
 
 	value := getEnv("TEST_VAR", "default")
 	assert.Equal(t, "test-value", value)
@@ -94,26 +101,26 @@ func TestGetBoolEnv(t *testing.T) {
 	// Test true values
 	trueValues := []string{"true", "True", "TRUE", "1", "yes"}
 	for _, v := range trueValues {
-		os.Setenv("BOOL_VAR", v)
+		require.NoError(t, os.Setenv("BOOL_VAR", v))
 		result := getBoolEnv("BOOL_VAR", false)
 		assert.True(t, result, "Value %s should be true", v)
-		os.Unsetenv("BOOL_VAR")
+		require.NoError(t, os.Unsetenv("BOOL_VAR"))
 	}
 
 	// Test false values
 	falseValues := []string{"false", "False", "FALSE", "0", "no"}
 	for _, v := range falseValues {
-		os.Setenv("BOOL_VAR", v)
+		require.NoError(t, os.Setenv("BOOL_VAR", v))
 		result := getBoolEnv("BOOL_VAR", true)
 		assert.False(t, result, "Value %s should be false", v)
-		os.Unsetenv("BOOL_VAR")
+		require.NoError(t, os.Unsetenv("BOOL_VAR"))
 	}
 
 	// Test invalid value (should return default)
-	os.Setenv("BOOL_VAR", "invalid")
+	require.NoError(t, os.Setenv("BOOL_VAR", "invalid"))
 	result := getBoolEnv("BOOL_VAR", true)
 	assert.True(t, result)
-	os.Unsetenv("BOOL_VAR")
+	require.NoError(t, os.Unsetenv("BOOL_VAR"))
 
 	// Test non-existent var
 	result = getBoolEnv("NON_EXISTENT", true)
@@ -122,14 +129,16 @@ func TestGetBoolEnv(t *testing.T) {
 
 func TestGetIntEnv(t *testing.T) {
 	// Test valid integer
-	os.Setenv("INT_VAR", "42")
-	defer os.Unsetenv("INT_VAR")
+	require.NoError(t, os.Setenv("INT_VAR", "42"))
+	defer func() {
+		require.NoError(t, os.Unsetenv("INT_VAR"))
+	}()
 
 	value := getIntEnv("INT_VAR", 0)
 	assert.Equal(t, 42, value)
 
 	// Test invalid integer
-	os.Setenv("INT_VAR", "not-a-number")
+	require.NoError(t, os.Setenv("INT_VAR", "not-a-number"))
 	value = getIntEnv("INT_VAR", 10)
 	assert.Equal(t, 10, value)
 
@@ -140,28 +149,32 @@ func TestGetIntEnv(t *testing.T) {
 
 func TestGetInt64Env(t *testing.T) {
 	// Test valid int64
-	os.Setenv("INT64_VAR", "9223372036854775807")
-	defer os.Unsetenv("INT64_VAR")
+	require.NoError(t, os.Setenv("INT64_VAR", "9223372036854775807"))
+	defer func() {
+		require.NoError(t, os.Unsetenv("INT64_VAR"))
+	}()
 
 	value := getInt64Env("INT64_VAR", 0)
 	assert.Equal(t, int64(9223372036854775807), value)
 
 	// Test invalid int64
-	os.Setenv("INT64_VAR", "invalid")
+	require.NoError(t, os.Setenv("INT64_VAR", "invalid"))
 	value = getInt64Env("INT64_VAR", 100)
 	assert.Equal(t, int64(100), value)
 }
 
 func TestGetDurationEnv(t *testing.T) {
 	// Test valid duration
-	os.Setenv("DURATION_VAR", "5m30s")
-	defer os.Unsetenv("DURATION_VAR")
+	require.NoError(t, os.Setenv("DURATION_VAR", "5m30s"))
+	defer func() {
+		require.NoError(t, os.Unsetenv("DURATION_VAR"))
+	}()
 
 	value := getDurationEnv("DURATION_VAR", time.Second)
 	assert.Equal(t, 5*time.Minute+30*time.Second, value)
 
 	// Test invalid duration
-	os.Setenv("DURATION_VAR", "invalid")
+	require.NoError(t, os.Setenv("DURATION_VAR", "invalid"))
 	value = getDurationEnv("DURATION_VAR", time.Hour)
 	assert.Equal(t, time.Hour, value)
 

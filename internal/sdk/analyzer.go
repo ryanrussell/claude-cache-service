@@ -221,7 +221,7 @@ func (a *Analyzer) analyzeBatch(ctx context.Context, sdks []Config) []AnalysisRe
 		results = append(results, AnalysisResult{
 			SDK:      sdk,
 			Analysis: nil,
-			Error:    fmt.Errorf(errMsg),
+			Error:    fmt.Errorf("%s", errMsg),
 		})
 	}
 

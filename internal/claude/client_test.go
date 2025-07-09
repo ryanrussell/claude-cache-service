@@ -93,7 +93,9 @@ func TestSendMessage(t *testing.T) {
 
 				// Send response
 				w.WriteHeader(tt.statusCode)
-				json.NewEncoder(w).Encode(tt.serverResponse)
+				if err := json.NewEncoder(w).Encode(tt.serverResponse); err != nil {
+					t.Fatalf("Failed to encode response: %v", err)
+				}
 			}))
 			defer server.Close()
 
@@ -130,21 +132,25 @@ func TestRetryLogic(t *testing.T) {
 		if callCount < 3 {
 			// Fail with server error (retryable)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(ErrorResponse{
+			if err := json.NewEncoder(w).Encode(ErrorResponse{
 				Type:    "internal_server_error",
 				Message: "Server error",
-			})
+			}); err != nil {
+				t.Fatalf("Failed to encode error response: %v", err)
+			}
 		} else {
 			// Succeed on third attempt
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(Response{
+			if err := json.NewEncoder(w).Encode(Response{
 				ID:   "msg_123",
 				Type: "message",
 				Role: "assistant",
 				Content: []ContentBlock{
 					{Type: "text", Text: "Success after retries"},
 				},
-			})
+			}); err != nil {
+				t.Fatalf("Failed to encode response: %v", err)
+			}
 		}
 	}))
 	defer server.Close()

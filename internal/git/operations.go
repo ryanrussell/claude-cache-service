@@ -152,7 +152,8 @@ func (g *Client) GetCommitsSince(ctx context.Context, repoPath string, since tim
 
 		// Get changed files
 		parent, err := c.Parent(0)
-		if err == object.ErrParentNotFound {
+		switch err {
+		case object.ErrParentNotFound:
 			// Initial commit, all files are new
 			files, err := c.Files()
 			if err != nil {
@@ -165,7 +166,7 @@ func (g *Client) GetCommitsSince(ctx context.Context, repoPath string, since tim
 			if err != nil {
 				return err
 			}
-		} else if err == nil {
+		case nil:
 			// Get diff between commit and parent
 			patch, err := parent.Patch(c)
 			if err != nil {
